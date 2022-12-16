@@ -81,7 +81,6 @@ fn match_regex(a: NaslValue, matches: Option<NaslValue>) -> InterpretResult {
     }
 }
 
-
 fn not_match_regex(a: NaslValue, matches: Option<NaslValue>) -> InterpretResult {
     let result = match_regex(a, matches)?;
     Ok(NaslValue::Boolean(!bool::from(result)))
@@ -141,17 +140,17 @@ impl<'a> OperatorExtension for Interpreter<'a> {
             TokenCategory::EqualTilde => self.execute(stmts, match_regex),
             TokenCategory::BangTilde => self.execute(stmts, not_match_regex),
             TokenCategory::GreaterLess => self.execute(stmts, |a, b| {
-                let substr = b.map(|x|x.to_string()).unwrap_or_default();
+                let substr = b.map(|x| x.to_string()).unwrap_or_default();
                 Ok(NaslValue::Boolean(a.to_string().contains(&substr)))
             }),
             TokenCategory::GreaterBangLess => self.execute(stmts, |a, b| {
-                let substr = b.map(|x|x.to_string()).unwrap_or_default();
+                let substr = b.map(|x| x.to_string()).unwrap_or_default();
                 Ok(NaslValue::Boolean(!a.to_string().contains(&substr)))
             }),
             // bool
-            TokenCategory::Bang => self.execute(stmts, |a, _| {
-                Ok(NaslValue::Boolean(!bool::from(a)))
-            }),
+            TokenCategory::Bang => {
+                self.execute(stmts, |a, _| Ok(NaslValue::Boolean(!bool::from(a))))
+            }
             TokenCategory::AmpersandAmpersand => self.execute(stmts, |a, b| {
                 let right = b.map(bool::from).unwrap_or_default();
                 Ok(NaslValue::Boolean(bool::from(a) && right))
@@ -169,23 +168,44 @@ impl<'a> OperatorExtension for Interpreter<'a> {
                 Ok(NaslValue::Boolean(a != right))
             }),
             TokenCategory::Greater => self.execute(stmts, |a, b| {
-                let right = b.map(|x|i32::from(&x)).unwrap_or_default();
+                let right = b.map(|x| i32::from(&x)).unwrap_or_default();
                 Ok(NaslValue::Boolean(i32::from(&a) > right))
             }),
             TokenCategory::Less => self.execute(stmts, |a, b| {
-                let right = b.map(|x|i32::from(&x)).unwrap_or_default();
+                let right = b.map(|x| i32::from(&x)).unwrap_or_default();
                 Ok(NaslValue::Boolean(i32::from(&a) < right))
             }),
             TokenCategory::GreaterEqual => self.execute(stmts, |a, b| {
-                let right = b.map(|x|i32::from(&x)).unwrap_or_default();
+                let right = b.map(|x| i32::from(&x)).unwrap_or_default();
                 Ok(NaslValue::Boolean(i32::from(&a) >= right))
             }),
             TokenCategory::LessEqual => self.execute(stmts, |a, b| {
-                let right = b.map(|x|i32::from(&x)).unwrap_or_default();
+                let right = b.map(|x| i32::from(&x)).unwrap_or_default();
                 Ok(NaslValue::Boolean(i32::from(&a) <= right))
             }),
-            // weird
-            TokenCategory::X => todo!(),
+            TokenCategory::X => {
+                // operation on more than two values
+                if stmts.len() != 2 {
+                    return Err(InterpretError {
+                        reason: "".to_owned(),
+                    });
+                }
+                let mut stmts = stmts;
+                let repeat = {
+                    let last = self.resolve(stmts.pop().unwrap())?;
+                    i32::from(&last)
+                };
+                if repeat == 0 {
+                    // don't execute;
+                    return Ok(NaslValue::Null);
+                }
+                let repeatable = stmts.pop().unwrap();
+                for _ in 1..repeat -1 {
+                    self.resolve(repeatable.clone())?;
+                }
+                self.resolve(repeatable)
+            }
+
             _ => Err(InterpretError {
                 reason: format!("Unsupported operations {:?}", category),
             }),
@@ -250,6 +270,7 @@ mod tests {
         greater: "1 > 0;" => NaslValue::Boolean(true),
         less: "1 < 2;" => NaslValue::Boolean(true),
         greater_equal: "1 >= 1;" => NaslValue::Boolean(true),
-        less_equal: "1 <= 1;" => NaslValue::Boolean(true)
+        less_equal: "1 <= 1;" => NaslValue::Boolean(true),
+        gonna_give_it_to_ya: "script_oid('hi') x 200;" => NaslValue::Null
     }
 }
