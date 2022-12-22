@@ -10,7 +10,7 @@ use crate::{
     call::CallExtension,
     context::{ContextType, Register},
     error::InterpretError,
-    operator::OperatorExtension,
+    operator::OperatorExtension, declare::DeclareFunctionExtension,
 };
 
 /// Represents a valid Value of NASL
@@ -30,6 +30,8 @@ pub enum NaslValue {
     AttackCategory(ACT),
     /// Null value
     Null,
+    /// Returns value of the context
+    Return(i32),
     /// Exit value of the script
     Exit(i32),
 }
@@ -53,6 +55,7 @@ impl ToString for NaslValue {
             NaslValue::Boolean(x) => x.to_string(),
             NaslValue::Null => "\0".to_owned(),
             NaslValue::Exit(rc) => format!("exit({})", rc),
+            NaslValue::Return(rc) => format!("return({})", rc),
             NaslValue::AttackCategory(category) => Keyword::ACT(*category).to_string(),
         }
     }
@@ -109,6 +112,7 @@ impl From<NaslValue> for bool {
             NaslValue::Exit(number) => number != 0,
             NaslValue::AttackCategory(_) => true,
             NaslValue::Dict(v) => !v.is_empty(),
+            NaslValue::Return(number) => number != 0,
         }
     }
 }
@@ -124,6 +128,7 @@ impl From<&NaslValue> for i32 {
             &NaslValue::AttackCategory(x) => x as i32,
             NaslValue::Null => 0,
             &NaslValue::Exit(x) => x,
+            &NaslValue::Return(x) => x,
         }
     }
 }
@@ -221,21 +226,27 @@ impl<'a> Interpreter<'a> {
                     _ => Err(InterpretError::new("expected numeric value".to_string())),
                 }
             }
-            Return(_) => todo!(),
+            Return(stmt) => {
+                let rc = self.resolve(*stmt)?;
+                match rc {
+                    NaslValue::Number(rc) => Ok(NaslValue::Return(rc)),
+                    _ => Err(InterpretError::new("expected numeric value".to_string())),
+                }
+            },
             Include(_) => todo!(),
             NamedParameter(_, _) => todo!(),
             For(_, _, _, _) => todo!(),
             While(_, _) => todo!(),
             Repeat(_, _) => todo!(),
             ForEach(_, _, _) => todo!(),
-            FunctionDeclaration(_, _, _) => todo!(),
+            FunctionDeclaration(name, args, exec) => self.declare_function(name, args, exec),
             Primitive(token) => TryFrom::try_from((self.code, token)),
             Variable(token) => {
                 let name: NaslValue = TryFrom::try_from((self.code, token))?;
                 match self.registrat.named(&name.to_string()).ok_or_else(|| {
                     InterpretError::new(format!("variable {} not found", name.to_string()))
                 })? {
-                    ContextType::Function(_) => todo!(),
+                    ContextType::Function(_, _) => todo!(),
                     ContextType::Value(result) => Ok(result.clone()),
                 }
             }
@@ -265,8 +276,10 @@ impl<'a> Interpreter<'a> {
             },
             Block(blocks) => {
                 for stmt in blocks {
-                    if let NaslValue::Exit(rc) = self.resolve(stmt)? {
-                        return Ok(NaslValue::Exit(rc));
+                    match self.resolve(stmt)? {
+                        NaslValue::Exit(rc) => return Ok(NaslValue::Exit(rc)),
+                        NaslValue::Return(rc) => return Ok(NaslValue::Return(rc)),
+                        _ => {}
                     }
                 }
                 // currently blocks don't return something
