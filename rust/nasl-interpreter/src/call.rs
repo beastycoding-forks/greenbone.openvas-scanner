@@ -2,7 +2,7 @@ use nasl_syntax::{Statement, Statement::*, Token};
 use std::{collections::HashMap, ops::Range};
 
 use crate::{
-    context::NaslContextType, error::InterpretError, interpreter::InterpretResult, lookup,
+    error::InterpretError, interpreter::InterpretResult, lookup,
     Definition, Interpreter, NaslValue,
 };
 
@@ -45,8 +45,7 @@ impl<'a> CallExtension for Interpreter<'a> {
             Definition::Value(NaslValue::Array(position.clone())),
         );
 
-        self.registrat
-            .create_root_child(NaslContextType::Function(named, vec![]));
+        self.registrat.create_root_child(named);
         let result = match lookup(name) {
             // Built-In Function
             Some(function) => match function(self.resolve_key(), self.storage, &self.registrat) {
