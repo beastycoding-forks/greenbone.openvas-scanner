@@ -3,7 +3,7 @@ use std::ops::Range;
 use nasl_syntax::{Statement, Token};
 
 use crate::{
-    error::InterpretError, interpreter::InterpretResult, ContextType, Interpreter, NaslValue,
+    error::InterpretError, interpreter::InterpretResult, Definition, Interpreter, NaslValue,
 };
 
 /// Is a trait to declare functions
@@ -39,7 +39,7 @@ impl<'a> DeclareFunctionExtension for Interpreter<'a> {
             }
         }
         self.registrat
-            .add_global(name, ContextType::Function(names, *execution));
+            .add_global(name, Definition::Function(names, *execution));
         Ok(NaslValue::Null)
     }
 }

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    context::{ContextType, NaslContext, Register},
+    context::{Definition, NaslContext, Register},
     error::FunctionError,
     interpreter::NaslValue,
     NaslFunction,
@@ -69,23 +69,20 @@ macro_rules! make_storage_function {
             let ctx = registrat.last();
             let mut variables = vec![];
             $(
-            let positional = ctx.positional(registrat);
+            // _FCT_ANON_ARGS msut be set by call and holds all positional arguments
+            let value = get_named_parameter(registrat, ctx, "_FCT_ANON_ARGS", true)?;
+            let empty = vec![];
+            let positional = match value {
+                    NaslValue::Array(x) => x,
+                    _ => &empty,
+                };
             if $len > 0 && positional.len() != $len{
                 return Err(FunctionError::new(
                     format!("expected {} positional arguments but {} were given.", $len, positional.len()),
                 ));
             }
             for p in positional {
-                match p {
-                    ContextType::Value(value) => {
-                        variables.push(value);
-                    },
-                    _ => {
-                        return Err(FunctionError::new(
-                            "argument is a function, string was expected".to_string(),
-                        ))
-                    }
-                }
+                variables.push(p);
             }
             )?
             $(
@@ -134,7 +131,7 @@ fn get_named_parameter<'a>(
             }
         }
         Some(ct) => match ct {
-            ContextType::Value(value) => Ok(value),
+            Definition::Value(value) => Ok(value),
             _ => Err(FunctionError::new(format!(
                 "expected {} to be a string.",
                 key
