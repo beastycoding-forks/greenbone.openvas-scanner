@@ -65,9 +65,9 @@ impl ToString for NaslValue {
 
 /// Used to interpret a Statement
 pub struct Interpreter<'a> {
-    // TODO change to enum
-    pub(crate) oid: Option<&'a str>,
-    pub(crate) filename: Option<&'a str>,
+    // while running the interpreter it needs either an OID when runned based on that
+    // or a filename. This mainly needed for storage.
+    pub(crate) key: &'a str,
     pub(crate) code: &'a str,
     pub(crate) registrat: Register,
     pub(crate) storage: &'a dyn Sink,
@@ -171,10 +171,9 @@ pub type InterpretResult = Result<NaslValue, InterpretError>;
 impl<'a> Interpreter<'a> {
     /// Creates a new Interpreter.
     pub fn new(
+        key: &'a str,
         storage: &'a dyn Sink,
         initial: Vec<(String, Definition)>,
-        oid: Option<&'a str>,
-        filename: Option<&'a str>,
         code: &'a str,
     ) -> Self {
         let mut registrat = Register::default();
@@ -183,20 +182,12 @@ impl<'a> Interpreter<'a> {
         registrat.create_root(initial);
 
         Interpreter {
-            oid,
-            filename,
+            key,
             code,
             registrat,
             storage,
             lexer,
         }
-    }
-
-    pub(crate) fn resolve_key(&self) -> &str {
-        if let Some(oid) = self.oid {
-            return oid;
-        }
-        self.filename.unwrap_or_default()
     }
 
     /// Interprets a Statement

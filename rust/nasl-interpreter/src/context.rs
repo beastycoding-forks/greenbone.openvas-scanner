@@ -133,18 +133,13 @@ impl Default for Register {
 }
 impl NaslContext {
     /// Adds a named parameter to the context
-    // TODO remove from ContextType to NaslValue
     pub fn add_named(&mut self, name: &str, value: Definition) {
         self.values.insert(name.to_owned(), value);
     }
 
-    /// Adds a named parameter to the root context
-    pub fn add_global(&mut self, registrat: &mut Register, name: &str, value: Definition) {
-        let global = &mut registrat.blocks[0];
-        global.add_named(name, value);
-    }
-
     /// Retrieves a named parameter
+    ///
+    /// First it checks the locally stored values, than the parents up to root.
     pub fn named<'a>(&'a self, registrat: &'a Register, name: &'a str) -> Option<&Definition> {
         // first check local
         match self.values.get(name) {

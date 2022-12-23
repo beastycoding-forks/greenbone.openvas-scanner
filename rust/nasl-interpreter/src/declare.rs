@@ -58,7 +58,7 @@ mod tests {
         }
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
     }
 }

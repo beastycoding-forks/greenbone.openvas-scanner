@@ -48,7 +48,7 @@ impl<'a> CallExtension for Interpreter<'a> {
         self.registrat.create_root_child(named);
         let result = match lookup(name) {
             // Built-In Function
-            Some(function) => match function(self.resolve_key(), self.storage, &self.registrat) {
+            Some(function) => match function(self.key, self.storage, &self.registrat) {
                 Ok(value) => Ok(value),
                 Err(x) => Err(InterpretError::new(format!(
                     "unable to call function {}: {:?}",
@@ -111,7 +111,7 @@ mod tests {
         test();
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(3))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(1))));
@@ -126,7 +126,7 @@ mod tests {
         test();
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Array(vec![NaslValue::Number(1), NaslValue::Number(23)]))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Array(vec![]))));
