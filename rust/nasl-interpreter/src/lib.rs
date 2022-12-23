@@ -8,11 +8,13 @@ mod assign;
 mod declare;
 mod context;
 pub mod error;
+pub mod naslvalue;
 mod interpreter;
 mod operator;
 
 pub use context::Definition;
-pub use interpreter::{Interpreter, NaslValue};
+pub use naslvalue::NaslValue;
+pub use interpreter::Interpreter;
 use nasl_syntax::parse;
 use sink::{Sink, SinkError};
 

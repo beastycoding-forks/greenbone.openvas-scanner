@@ -1,6 +1,6 @@
 use nasl_syntax::Statement;
 
-use crate::interpreter::NaslValue;
+use crate::NaslValue;
 
 /// Contexts are responsible to locate, add and delete everything that is declared within a NASL plugin
 use std::collections::HashMap;

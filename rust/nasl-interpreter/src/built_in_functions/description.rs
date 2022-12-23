@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
     context::{Definition, NaslContext, Register},
     error::FunctionError,
-    interpreter::NaslValue,
+    naslvalue::NaslValue,
     NaslFunction,
 };
 
