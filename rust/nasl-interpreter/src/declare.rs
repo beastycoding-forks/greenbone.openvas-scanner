@@ -46,10 +46,9 @@ impl<'a> DeclareFunctionExtension for Interpreter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use nasl_syntax::parse;
     use sink::DefaultSink;
 
-    use crate::{error::InterpretError, Interpreter, NaslValue};
+    use crate::{Interpreter, NaslValue};
 
     #[test]
     fn declare_function() {
@@ -60,12 +59,6 @@ mod tests {
         "###;
         let storage = DefaultSink::new(false);
         let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
-        let mut parser = parse(code).map(|x| match x {
-            Ok(x) => interpreter.resolve(x),
-            Err(x) => Err(InterpretError {
-                reason: x.to_string(),
-            }),
-        });
-        assert_eq!(parser.next(), Some(Ok(NaslValue::Null)));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
     }
 }

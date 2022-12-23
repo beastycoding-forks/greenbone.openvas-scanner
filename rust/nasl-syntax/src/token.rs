@@ -490,7 +490,7 @@ impl<'a> Tokenizer<'a> {
 
     // checks if a number is binary, octal, base10 or hex
     #[inline(always)]
-    pub fn tokenize_number(&mut self, mut start: usize, current: char) -> Option<Token> {
+    fn tokenize_number(&mut self, mut start: usize, current: char) -> Option<Token> {
         use Base::*;
         let may_base = {
             if current == '0' {

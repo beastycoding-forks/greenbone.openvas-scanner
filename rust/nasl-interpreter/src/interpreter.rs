@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Range};
 
 use nasl_syntax::{
-    Keyword, NumberBase, Statement, Statement::*, StringCategory, Token, TokenCategory, ACT,
+    Keyword, NumberBase, Statement, Statement::*, StringCategory, Token, TokenCategory, ACT, Lexer, Tokenizer,
 };
 use sink::Sink;
 
@@ -69,6 +69,7 @@ pub struct Interpreter<'a> {
     pub(crate) code: &'a str,
     pub(crate) registrat: Register,
     pub(crate) storage: &'a dyn Sink,
+    lexer: Lexer<'a>,
 }
 
 trait PrimitiveResolver<T> {
@@ -170,13 +171,17 @@ impl<'a> Interpreter<'a> {
         code: &'a str,
     ) -> Self {
         let mut registrat = Register::default();
+        let tokenizer = Tokenizer::new(code);
+        let lexer = Lexer::new(tokenizer);
         registrat.create_root(initial);
+
         Interpreter {
             oid,
             filename,
             code,
             registrat,
             storage,
+            lexer,
         }
     }
 
@@ -293,5 +298,18 @@ impl<'a> Interpreter<'a> {
 
     pub fn registrat(&self) -> &Register {
         &self.registrat
+    }
+}
+
+impl<'a> Iterator for Interpreter<'a> {
+    type Item= InterpretResult;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.lexer.next().map(|lr| {
+            match lr {
+                Ok(stmt) => self.resolve(stmt),
+                Err(err) => Err(InterpretError::from(err)),
+            }
+        })
     }
 }
