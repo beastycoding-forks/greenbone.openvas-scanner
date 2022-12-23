@@ -43,7 +43,7 @@ pub fn interpret<'a>(
     code: &'a str,
 ) -> Result<NaslValue, InterpretError> {
     let mut interpreter = match mode {
-        Mode::Normal(oid) => Interpreter::new(storage, vec![], Some(oid), None, code),
+        Mode::Normal(oid) => Interpreter::new(oid, storage, vec![], code),
         Mode::Description(filename) => {
             let initial = vec![(
                 "description".to_owned(),
@@ -55,7 +55,7 @@ pub fn interpret<'a>(
             ) {
                 return Err(InterpretError::from(err));
             }
-            Interpreter::new(storage, initial, None, Some(filename), code)
+            Interpreter::new(filename, storage, initial, code)
         }
     };
 

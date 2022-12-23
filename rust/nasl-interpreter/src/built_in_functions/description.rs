@@ -223,7 +223,6 @@ fn as_xref_field(arguments: &[&NaslValue]) -> Result<NVTField, FunctionError> {
             reason: "expected either name or csv to be set".to_owned(),
         });
     }
-    // TODO handle csv correctly
     Ok(NVTField::Reference(NvtRef {
         class: arguments[1].to_string(),
         id: arguments[0].to_string(),

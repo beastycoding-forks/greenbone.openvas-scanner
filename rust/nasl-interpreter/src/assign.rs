@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::Range};
 
-use nasl_syntax::{AssignOrder, Statement, Token, TokenCategory};
+use nasl_syntax::{AssignOrder, Statement, TokenCategory};
 
 use crate::{
     error::InterpretError, interpreter::InterpretResult, Definition, Interpreter, NaslValue,
@@ -250,10 +250,9 @@ impl<'a> AssignExtension for Interpreter<'a> {
 mod tests {
     use std::collections::HashMap;
 
-    use nasl_syntax::parse;
     use sink::DefaultSink;
 
-    use crate::{error::InterpretError, Interpreter, NaslValue};
+    use crate::{Interpreter, NaslValue};
 
     #[test]
     fn variables() {
@@ -273,7 +272,7 @@ mod tests {
         --a;
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(12))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(25))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(23))));
@@ -304,7 +303,7 @@ mod tests {
         ++a[0];
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(12))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(25))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(23))));
@@ -326,7 +325,7 @@ mod tests {
         a['hi'];
         "###;
         let storage = DefaultSink::new(false);
-        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        let mut interpreter = Interpreter::new("1", &storage, vec![], code);
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(12))));
         assert_eq!(
             interpreter.next(),
