@@ -93,10 +93,9 @@ impl<'a> CallExtension for Interpreter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use nasl_syntax::parse;
     use sink::DefaultSink;
 
-    use crate::{Interpreter, error::InterpretError, NaslValue};
+    use crate::{Interpreter, NaslValue};
 
 
     #[test]
@@ -111,14 +110,8 @@ mod tests {
         "###;
         let storage = DefaultSink::new(false);
         let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
-        let mut parser = parse(code).map(|x| match x {
-            Ok(x) => interpreter.resolve(x),
-            Err(x) => Err(InterpretError {
-                reason: x.to_string(),
-            }),
-        });
-        assert_eq!(parser.next(), Some(Ok(NaslValue::Null)));
-        assert_eq!(parser.next(), Some(Ok(NaslValue::Number(3))));
-        assert_eq!(parser.next(), Some(Ok(NaslValue::Number(1))));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(3))));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(1))));
     }
 }
