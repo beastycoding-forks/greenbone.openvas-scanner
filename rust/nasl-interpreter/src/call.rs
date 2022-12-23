@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Range};
 
 use crate::{
     context::NaslContextType, error::InterpretError, interpreter::InterpretResult, lookup,
-    ContextType, Interpreter, NaslValue,
+    Definition, Interpreter, NaslValue,
 };
 
 /// Is a trait to handle function calls within nasl.
@@ -25,11 +25,11 @@ impl<'a> CallExtension for Interpreter<'a> {
                         NamedParameter(token, val) => {
                             let val = self.resolve(*val)?;
                             let name = self.code[Range::from(token)].to_owned();
-                            named.insert(name, ContextType::Value(val));
+                            named.insert(name, Definition::Value(val));
                         }
                         val => {
                             let val = self.resolve(val)?;
-                            position.push(ContextType::Value(val));
+                            position.push(val);
                         }
                     }
                 }
@@ -40,9 +40,13 @@ impl<'a> CallExtension for Interpreter<'a> {
                 ))
             }
         };
+        named.insert(
+            "_FCT_ANON_ARGS".to_owned(),
+            Definition::Value(NaslValue::Array(position.clone())),
+        );
 
         self.registrat
-            .create_root_child(NaslContextType::Function(named, position));
+            .create_root_child(NaslContextType::Function(named, vec![]));
         let result = match lookup(name) {
             // Built-In Function
             Some(function) => match function(self.resolve_key(), self.storage, &self.registrat) {
@@ -62,21 +66,21 @@ impl<'a> CallExtension for Interpreter<'a> {
                     })?
                     .clone();
                 match found {
-                    ContextType::Function(params, stmt) => {
+                    Definition::Function(params, stmt) => {
                         // prepare default values
                         for p in params {
                             match self.registrat.named(&p) {
                                 None => {
+                                    // add default NaslValue::Null for each defined params
                                     self.registrat
                                         .last_mut()
-                                        .add_named(&p, ContextType::Value(NaslValue::Null));
+                                        .add_named(&p, Definition::Value(NaslValue::Null));
                                 }
                                 Some(_) => {}
                             }
                         }
-                        // add default NaslValue::Null for each defined params
                         match self.resolve(stmt)? {
-                            NaslValue::Return(x) => Ok(NaslValue::Number(x)),
+                            NaslValue::Return(x) => Ok(*x),
                             a => Ok(a),
                         }
                     }
@@ -97,7 +101,6 @@ mod tests {
 
     use crate::{Interpreter, NaslValue};
 
-
     #[test]
     fn default_null_on_user_defined_functions() {
         let code = r###"
@@ -113,5 +116,20 @@ mod tests {
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(3))));
         assert_eq!(interpreter.next(), Some(Ok(NaslValue::Number(1))));
+    }
+    #[test]
+    fn fct_anon_args() {
+        let code = r###"
+        function test() {
+            return _FCT_ANON_ARGS;
+        }
+        test(1, 23);
+        test();
+        "###;
+        let storage = DefaultSink::new(false);
+        let mut interpreter = Interpreter::new(&storage, vec![], Some("1"), None, code);
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Null)));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Array(vec![NaslValue::Number(1), NaslValue::Number(23)]))));
+        assert_eq!(interpreter.next(), Some(Ok(NaslValue::Array(vec![]))));
     }
 }

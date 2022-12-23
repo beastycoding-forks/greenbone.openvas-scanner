@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Range};
 use nasl_syntax::{AssignOrder, Statement, Token, TokenCategory};
 
 use crate::{
-    error::InterpretError, interpreter::InterpretResult, ContextType, Interpreter, NaslValue,
+    error::InterpretError, interpreter::InterpretResult, Definition, Interpreter, NaslValue,
 };
 use Statement::*;
 
@@ -55,12 +55,12 @@ impl<'a> Interpreter<'a> {
         match self
             .registrat()
             .named(key)
-            .unwrap_or(&ContextType::Value(NaslValue::Null))
+            .unwrap_or(&Definition::Value(NaslValue::Null))
         {
-            ContextType::Function(_, _) => Err(InterpretError {
+            Definition::Function(_, _) => Err(InterpretError {
                 reason: format!("{} is not assignable", key),
             }),
-            ContextType::Value(val) => Ok(val.clone()),
+            Definition::Value(val) => Ok(val.clone()),
         }
     }
 
@@ -80,7 +80,7 @@ impl<'a> Interpreter<'a> {
                 let result = result(&original, right);
                 dict.insert(idx, result);
                 let register = self.registrat.last_mut();
-                register.add_named(key, ContextType::Value(NaslValue::Dict(dict)));
+                register.add_named(key, Definition::Value(NaslValue::Dict(dict)));
                 original
             }
             AssignOrder::AssignReturn => {
@@ -88,7 +88,7 @@ impl<'a> Interpreter<'a> {
                 let result = result(original, right);
                 dict.insert(idx, result.clone());
                 let register = self.registrat.last_mut();
-                register.add_named(key, ContextType::Value(NaslValue::Dict(dict)));
+                register.add_named(key, Definition::Value(NaslValue::Dict(dict)));
                 result
             }
         }
@@ -110,14 +110,14 @@ impl<'a> Interpreter<'a> {
                 let result = result(&orig, right);
                 arr[idx] = result;
                 let register = self.registrat.last_mut();
-                register.add_named(key, ContextType::Value(NaslValue::Array(arr)));
+                register.add_named(key, Definition::Value(NaslValue::Array(arr)));
                 orig
             }
             AssignOrder::AssignReturn => {
                 let result = result(&arr[idx], right);
                 arr[idx] = result.clone();
                 let register = self.registrat.last_mut();
-                register.add_named(key, ContextType::Value(NaslValue::Array(arr)));
+                register.add_named(key, Definition::Value(NaslValue::Array(arr)));
                 result
             }
         }
@@ -148,7 +148,7 @@ impl<'a> Interpreter<'a> {
             None => {
                 let result = result(&left, right);
                 let register = self.registrat.last_mut();
-                register.add_named(key, ContextType::Value(result.clone()));
+                register.add_named(key, Definition::Value(result.clone()));
                 match order {
                     AssignOrder::AssignReturn => result,
                     AssignOrder::ReturnAssign => left,

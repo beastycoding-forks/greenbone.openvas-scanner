@@ -11,7 +11,7 @@ pub mod error;
 mod interpreter;
 mod operator;
 
-pub use context::ContextType;
+pub use context::Definition;
 pub use interpreter::{Interpreter, NaslValue};
 use nasl_syntax::parse;
 use sink::{Sink, SinkError};
@@ -47,7 +47,7 @@ pub fn interpret<'a>(
         Mode::Description(filename) => {
             let initial = vec![(
                 "description".to_owned(),
-                ContextType::Value(NaslValue::Number(1)),
+                Definition::Value(NaslValue::Number(1)),
             )];
             if let Err(err) = storage.dispatch(
                 filename,

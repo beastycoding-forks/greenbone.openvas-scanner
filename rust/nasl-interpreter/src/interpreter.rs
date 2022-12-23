@@ -1,16 +1,18 @@
 use std::{collections::HashMap, ops::Range};
 
 use nasl_syntax::{
-    Keyword, NumberBase, Statement, Statement::*, StringCategory, Token, TokenCategory, ACT, Lexer, Tokenizer,
+    Keyword, Lexer, NumberBase, Statement, Statement::*, StringCategory, Token, TokenCategory,
+    Tokenizer, ACT,
 };
 use sink::Sink;
 
 use crate::{
     assign::AssignExtension,
     call::CallExtension,
-    context::{ContextType, Register},
+    context::{Definition, Register},
+    declare::DeclareFunctionExtension,
     error::InterpretError,
-    operator::OperatorExtension, declare::DeclareFunctionExtension,
+    operator::OperatorExtension,
 };
 
 /// Represents a valid Value of NASL
@@ -31,7 +33,7 @@ pub enum NaslValue {
     /// Null value
     Null,
     /// Returns value of the context
-    Return(i32),
+    Return(Box<NaslValue>),
     /// Exit value of the script
     Exit(i32),
 }
@@ -55,7 +57,7 @@ impl ToString for NaslValue {
             NaslValue::Boolean(x) => x.to_string(),
             NaslValue::Null => "\0".to_owned(),
             NaslValue::Exit(rc) => format!("exit({})", rc),
-            NaslValue::Return(rc) => format!("return({})", rc),
+            NaslValue::Return(rc) => format!("return({})", rc.to_string()),
             NaslValue::AttackCategory(category) => Keyword::ACT(*category).to_string(),
         }
     }
@@ -113,7 +115,7 @@ impl From<NaslValue> for bool {
             NaslValue::Exit(number) => number != 0,
             NaslValue::AttackCategory(_) => true,
             NaslValue::Dict(v) => !v.is_empty(),
-            NaslValue::Return(number) => number != 0,
+            NaslValue::Return(number) => bool::from(*number),
         }
     }
 }
@@ -129,7 +131,12 @@ impl From<&NaslValue> for i32 {
             &NaslValue::AttackCategory(x) => x as i32,
             NaslValue::Null => 0,
             &NaslValue::Exit(x) => x,
-            &NaslValue::Return(x) => x,
+            // to prevent unncessary clones for non boxed types it is resolved
+            // via a general match and internal clone due to return having a boxed NaslValue
+            boxed => match boxed.clone() {
+                NaslValue::Return(x) => i32::from(&*x),
+                _ => panic!("cannot handle {:?}", boxed),
+            },
         }
     }
 }
@@ -165,7 +172,7 @@ impl<'a> Interpreter<'a> {
     /// Creates a new Interpreter.
     pub fn new(
         storage: &'a dyn Sink,
-        initial: Vec<(String, ContextType)>,
+        initial: Vec<(String, Definition)>,
         oid: Option<&'a str>,
         filename: Option<&'a str>,
         code: &'a str,
@@ -203,8 +210,8 @@ impl<'a> Interpreter<'a> {
                 let val = val.clone();
 
                 match (position, val) {
-                    (None, ContextType::Value(v)) => Ok(v),
-                    (Some(p), ContextType::Value(NaslValue::Array(x))) => {
+                    (None, Definition::Value(v)) => Ok(v),
+                    (Some(p), Definition::Value(NaslValue::Array(x))) => {
                         let position = self.resolve(*p)?;
                         let position = i32::from(&position) as usize;
                         let result = x.get(position).ok_or_else(|| InterpretError {
@@ -212,7 +219,7 @@ impl<'a> Interpreter<'a> {
                         })?;
                         Ok(result.clone())
                     }
-                    (Some(p), ContextType::Value(NaslValue::Dict(x))) => {
+                    (Some(p), Definition::Value(NaslValue::Dict(x))) => {
                         let position = self.resolve(*p)?.to_string();
                         let result = x.get(&position).ok_or_else(|| InterpretError {
                             reason: format!("{} not found.", position),
@@ -233,11 +240,8 @@ impl<'a> Interpreter<'a> {
             }
             Return(stmt) => {
                 let rc = self.resolve(*stmt)?;
-                match rc {
-                    NaslValue::Number(rc) => Ok(NaslValue::Return(rc)),
-                    _ => Err(InterpretError::new("expected numeric value".to_string())),
-                }
-            },
+                Ok(NaslValue::Return(Box::new(rc)))
+            }
             Include(_) => todo!(),
             NamedParameter(_, _) => todo!(),
             For(_, _, _, _) => todo!(),
@@ -251,8 +255,8 @@ impl<'a> Interpreter<'a> {
                 match self.registrat.named(&name.to_string()).ok_or_else(|| {
                     InterpretError::new(format!("variable {} not found", name.to_string()))
                 })? {
-                    ContextType::Function(_, _) => todo!(),
-                    ContextType::Value(result) => Ok(result.clone()),
+                    Definition::Function(_, _) => todo!(),
+                    Definition::Value(result) => Ok(result.clone()),
                 }
             }
             Call(name, arguments) => self.call(name, arguments),
@@ -302,14 +306,12 @@ impl<'a> Interpreter<'a> {
 }
 
 impl<'a> Iterator for Interpreter<'a> {
-    type Item= InterpretResult;
+    type Item = InterpretResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.lexer.next().map(|lr| {
-            match lr {
-                Ok(stmt) => self.resolve(stmt),
-                Err(err) => Err(InterpretError::from(err)),
-            }
+        self.lexer.next().map(|lr| match lr {
+            Ok(stmt) => self.resolve(stmt),
+            Err(err) => Err(InterpretError::from(err)),
         })
     }
 }
