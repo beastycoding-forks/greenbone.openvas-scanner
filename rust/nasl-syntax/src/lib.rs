@@ -21,7 +21,7 @@ pub use token::StringCategory;
 pub use token::Base as NumberBase;
 pub use token::Keyword;
 pub use sink::nvt::ACT as ACT;
-pub use lexer::Lexer;
+pub use lexer::Lexer as Lexer;
 pub use token::Tokenizer;
 
 /// Parses given code and returns found Statements and Errors

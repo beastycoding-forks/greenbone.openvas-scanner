@@ -166,6 +166,38 @@ impl<'a> Lexer<'a> {
             Err(unexpected_end!("exit"))
         }
     }
+    fn parse_continue(&mut self) -> Result<(End, Statement), SyntaxError> {
+        let token = self.peek();
+        if let Some(token) = token {
+            if matches!(token.category(), Category::Semicolon) {
+                self.token();
+                return Ok((
+                    End::Done(Category::Semicolon),
+                    Statement::Continue,
+                ));
+            }
+            else {
+                return Err(unexpected_token!(token));
+            }
+        }
+        Err(unexpected_end!("exit"))
+    }
+    fn parse_break(&mut self) -> Result<(End, Statement), SyntaxError> {
+        let token = self.peek();
+        if let Some(token) = token {
+            if matches!(token.category(), Category::Semicolon) {
+                self.token();
+                return Ok((
+                    End::Done(Category::Semicolon),
+                    Statement::Break,
+                ));
+            }
+            else {
+                return Err(unexpected_token!(token));
+            }
+        }
+        Err(unexpected_end!("exit"))
+    }
     fn parse_for(&mut self) -> Result<(End, Statement), SyntaxError> {
         self.jump_to_left_parenthesis()?;
         let (end, assignment) = self.statement(0, &|c| c == Category::Semicolon)?;
@@ -318,6 +350,8 @@ impl<'a> Keywords for Lexer<'a> {
             Keyword::GlobalVar => self.parse_declaration(DeclareScope::Global),
             Keyword::Null => Ok((End::Continue, Statement::Primitive(token))),
             Keyword::Return => self.parse_return(),
+            Keyword::Continue => self.parse_continue(),
+            Keyword::Break => self.parse_break(),
             Keyword::Include => self.parse_include(),
             Keyword::Exit => self.parse_exit(),
             Keyword::FCTAnonArgs => self.parse_fct_anon_args(token),

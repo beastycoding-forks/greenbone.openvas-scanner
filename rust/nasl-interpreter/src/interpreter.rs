@@ -12,7 +12,7 @@ use crate::{
     context::{Definition, Register},
     declare::DeclareFunctionExtension,
     error::InterpretError,
-    operator::OperatorExtension,
+    operator::OperatorExtension, loop_extension::LoopExtension,
 };
 
 /// Represents a valid Value of NASL
@@ -34,6 +34,10 @@ pub enum NaslValue {
     Null,
     /// Returns value of the context
     Return(Box<NaslValue>),
+    /// Signals continuing a loop
+    Continue,
+    /// Signals a break of a control structure
+    Break,
     /// Exit value of the script
     Exit(i32),
 }
@@ -59,6 +63,8 @@ impl ToString for NaslValue {
             NaslValue::Exit(rc) => format!("exit({})", rc),
             NaslValue::Return(rc) => format!("return({})", rc.to_string()),
             NaslValue::AttackCategory(category) => Keyword::ACT(*category).to_string(),
+            NaslValue::Continue => "".to_string(),
+            NaslValue::Break => "".to_string(),
         }
     }
 }
@@ -116,6 +122,8 @@ impl From<NaslValue> for bool {
             NaslValue::AttackCategory(_) => true,
             NaslValue::Dict(v) => !v.is_empty(),
             NaslValue::Return(number) => bool::from(*number),
+            NaslValue::Continue => false,
+            NaslValue::Break => false,
         }
     }
 }
@@ -161,6 +169,20 @@ impl TryFrom<(&str, Token)> for NaslValue {
             }),
         }
     }
+}
+
+impl From<NaslValue> for Vec<NaslValue> {
+    fn from(value: NaslValue) -> Self {
+        match value {
+            NaslValue::Array(ret) => ret,
+            NaslValue::Dict(ret) => ret.values().cloned().collect(),
+            NaslValue::Boolean(_) => vec![value],
+            NaslValue::Number(_) => vec![value],
+            NaslValue::String(ret) => ret.chars().map(|x| NaslValue::String(x.to_string())).collect(),
+            _ => vec![]
+        }
+    }
+    
 }
 
 /// Interpreter always returns a NaslValue or an InterpretError
@@ -235,10 +257,10 @@ impl<'a> Interpreter<'a> {
             }
             Include(_) => todo!(),
             NamedParameter(_, _) => todo!(),
-            For(_, _, _, _) => todo!(),
-            While(_, _) => todo!(),
-            Repeat(_, _) => todo!(),
-            ForEach(_, _, _) => todo!(),
+            For(assignment, condition, update, body) => self.for_loop(assignment, condition, update, body),
+            While(condition, body) => self.while_loop(condition, body),
+            Repeat(body, condition) => self.repeat_loop(body, condition),
+            ForEach(variable, iterable, body) => self.for_each_loop(variable, iterable, body),
             FunctionDeclaration(name, args, exec) => self.declare_function(name, args, exec),
             Primitive(token) => TryFrom::try_from((self.code, token)),
             Variable(token) => {
@@ -279,6 +301,8 @@ impl<'a> Interpreter<'a> {
                     match self.resolve(stmt)? {
                         NaslValue::Exit(rc) => return Ok(NaslValue::Exit(rc)),
                         NaslValue::Return(rc) => return Ok(NaslValue::Return(rc)),
+                        NaslValue::Break => return Ok(NaslValue::Break),
+                        NaslValue::Continue => return Ok(NaslValue::Continue),
                         _ => {}
                     }
                 }
@@ -288,6 +312,8 @@ impl<'a> Interpreter<'a> {
             NoOp(_) => Ok(NaslValue::Null),
             EoF => todo!(),
             AttackCategory(cat) => Ok(NaslValue::AttackCategory(cat)),
+            Continue => Ok(NaslValue::Continue),
+            Break => Ok(NaslValue::Break),
         }
     }
 

@@ -10,6 +10,7 @@ mod context;
 pub mod error;
 mod interpreter;
 mod operator;
+mod loop_extension;
 
 pub use context::Definition;
 pub use interpreter::{Interpreter, NaslValue};

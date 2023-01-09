@@ -142,6 +142,10 @@ pub enum Keyword {
     Null,
     /// return
     Return,
+    /// continue
+    Continue,
+    /// break
+    Break,
     /// include
     Include,
     /// Scanning phases; can be set by category in the description block
@@ -173,6 +177,8 @@ make_keyword_matcher! {
     global_var: Keyword::GlobalVar,
     NULL: Keyword::Null,
     return: Keyword::Return,
+    continue: Keyword::Continue,
+    break: Keyword::Break,
     include: Keyword::Include,
     exit: Keyword::Exit,
     ACT_ATTACK: Keyword::ACT(ACT::Attack),
@@ -859,6 +865,9 @@ mod tests {
         verify_tokens!("return", vec![(Identifier(Some(Return)), 0, 6)]);
         verify_tokens!("include", vec![(Identifier(Some(Include)), 0, 7)]);
         verify_tokens!("exit", vec![(Identifier(Some(Exit)), 0, 4)]);
+        verify_tokens!("break", vec![(Identifier(Some(Break)), 0, 5)]);
+        verify_tokens!("continue", vec![(Identifier(Some(Continue)), 0, 8)]);
+        
     }
 
     #[test]
