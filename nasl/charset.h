@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2023 Greenbone AG
+/* SPDX-FileCopyrightText: 2023-2025 Greenbone AG
  * SPDX-FileCopyrightText: 2002 Jelmer Vernooij
  * SPDX-FileCopyrightText: 2001 Andrew Tridgell
  *

@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2023 Greenbone AG
+/* SPDX-FileCopyrightText: 2023-2025 Greenbone AG
  * SPDX-FileCopyrightText: 1998, 2002, 2007, 2011 Free Software Foundation, Inc.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later

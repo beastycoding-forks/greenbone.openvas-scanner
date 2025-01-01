@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2023 Greenbone AG
+/* SPDX-FileCopyrightText: 2023-2025 Greenbone AG
  * SPDX-FileCopyrightText: 1998-2002 Renaud Deraison
  * SPDX-FileCopyrightText: 2001 Michel Arboi
  *

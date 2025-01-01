@@ -1,4 +1,4 @@
-/* SPDX-FileCopyrightText: 2023 Greenbone AG
+/* SPDX-FileCopyrightText: 2023-2025 Greenbone AG
  * SPDX-FileCopyrightText: 1998-2006 Tenable Network Security, Inc.
  *
  * SPDX-License-Identifier: GPL-2.0-only
